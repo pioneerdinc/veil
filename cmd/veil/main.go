@@ -18,6 +18,13 @@ func main() {
 		if err != nil {
 			log.Fatalf("Failed to generate key: %v", err)
 		}
+		fmt.Printf(`██╗   ██╗███████╗██╗██╗     
+██║   ██║██╔════╝██║██║     
+██║   ██║█████╗  ██║██║     
+╚██╗ ██╔╝██╔══╝  ██║██║     
+ ╚████╔╝ ███████╗██║███████╗
+  ╚═══╝  ╚══════╝╚═╝╚══════╝
+`)
 		fmt.Printf("Your new MASTER_KEY is:\n\n%s\n\nSAVE THIS KEY! If you lose it, your secrets are gone forever.\n", key)
 		fmt.Println("Export it to your environment:\nexport MASTER_KEY=" + key)
 		return
