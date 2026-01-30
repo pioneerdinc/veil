@@ -1,6 +1,8 @@
 package app
 
 import (
+	"iter"
+
 	"github.com/ossydotpy/veil/internal/crypto"
 	"github.com/ossydotpy/veil/internal/exporter"
 	"github.com/ossydotpy/veil/internal/store"
@@ -38,11 +40,11 @@ func (a *App) Delete(vault, name string) error {
 	return a.store.Delete(vault, name)
 }
 
-func (a *App) List(vault string) ([]string, error) {
+func (a *App) List(vault string) iter.Seq2[string, error] {
 	return a.store.List(vault)
 }
 
-func (a *App) ListVaults() ([]string, error) {
+func (a *App) ListVaults() iter.Seq2[string, error] {
 	return a.store.ListVaults()
 }
 
@@ -51,13 +53,11 @@ func (a *App) Reset() error {
 }
 
 func (a *App) GetAllSecrets(vault string) (map[string]string, error) {
-	names, err := a.store.List(vault)
-	if err != nil {
-		return nil, err
-	}
-
-	secrets := make(map[string]string, len(names))
-	for _, name := range names {
+	secrets := make(map[string]string)
+	for name, err := range a.List(vault) {
+		if err != nil {
+			return nil, err
+		}
 		value, err := a.Get(vault, name)
 		if err != nil {
 			return nil, err

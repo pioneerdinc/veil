@@ -3,6 +3,7 @@ package sqlite
 import (
 	"database/sql"
 	"fmt"
+	"iter"
 	"os"
 	"path/filepath"
 
@@ -82,42 +83,54 @@ func (s *SqliteStore) Delete(vault, name string) error {
 	return nil
 }
 
-func (s *SqliteStore) List(vault string) ([]string, error) {
-	query := `SELECT name FROM secrets WHERE vault = ? ORDER BY name ASC;`
-	rows, err := s.db.Query(query, vault)
-	if err != nil {
-		return nil, fmt.Errorf("failed to list secrets: %w", err)
-	}
-	defer rows.Close()
-
-	var names []string
-	for rows.Next() {
-		var name string
-		if err := rows.Scan(&name); err != nil {
-			return nil, err
+func (s *SqliteStore) List(vault string) iter.Seq2[string, error] {
+	return func(yield func(string, error) bool) {
+		query := `SELECT name FROM secrets WHERE vault = ? ORDER BY name ASC;`
+		rows, err := s.db.Query(query, vault)
+		if err != nil {
+			yield("", fmt.Errorf("failed to list secrets: %w", err))
+			return
 		}
-		names = append(names, name)
+		defer rows.Close()
+
+		for rows.Next() {
+			var name string
+			if err := rows.Scan(&name); err != nil {
+				if !yield("", err) {
+					return
+				}
+				continue
+			}
+			if !yield(name, nil) {
+				return
+			}
+		}
 	}
-	return names, nil
 }
 
-func (s *SqliteStore) ListVaults() ([]string, error) {
-	query := `SELECT DISTINCT vault FROM secrets ORDER BY vault ASC;`
-	rows, err := s.db.Query(query)
-	if err != nil {
-		return nil, fmt.Errorf("failed to list vaults: %w", err)
-	}
-	defer rows.Close()
-
-	var vaults []string
-	for rows.Next() {
-		var vault string
-		if err := rows.Scan(&vault); err != nil {
-			return nil, err
+func (s *SqliteStore) ListVaults() iter.Seq2[string, error] {
+	return func(yield func(string, error) bool) {
+		query := `SELECT DISTINCT vault FROM secrets ORDER BY vault ASC;`
+		rows, err := s.db.Query(query)
+		if err != nil {
+			yield("", fmt.Errorf("failed to list vaults: %w", err))
+			return
 		}
-		vaults = append(vaults, vault)
+		defer rows.Close()
+
+		for rows.Next() {
+			var vault string
+			if err := rows.Scan(&vault); err != nil {
+				if !yield("", err) {
+					return
+				}
+				continue
+			}
+			if !yield(vault, nil) {
+				return
+			}
+		}
 	}
-	return vaults, nil
 }
 
 func (s *SqliteStore) Nuke() error {

@@ -143,21 +143,19 @@ func main() {
 			fmt.Fprintf(os.Stderr, "Usage: veil list <vault>\n")
 			os.Exit(1)
 		}
-		names, err := v.List(os.Args[2])
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-			os.Exit(1)
-		}
-		for _, name := range names {
+		for name, err := range v.List(os.Args[2]) {
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+				os.Exit(1)
+			}
 			fmt.Println(name)
 		}
 	case "vaults":
-		vaults, err := v.ListVaults()
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-			os.Exit(1)
-		}
-		for _, vault := range vaults {
+		for vault, err := range v.ListVaults() {
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+				os.Exit(1)
+			}
 			fmt.Println(vault)
 		}
 	case "export":
