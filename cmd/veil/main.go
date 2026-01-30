@@ -3,12 +3,14 @@ package main
 import (
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 
 	"github.com/ossydotpy/veil/internal/app"
 	"github.com/ossydotpy/veil/internal/config"
 	"github.com/ossydotpy/veil/internal/crypto"
 	"github.com/ossydotpy/veil/internal/exporter"
+	"github.com/ossydotpy/veil/internal/generator"
 	"github.com/ossydotpy/veil/internal/store"
 	"github.com/ossydotpy/veil/internal/store/sqlite"
 )
@@ -200,6 +202,21 @@ func main() {
 		for _, ref := range results {
 			fmt.Printf("  %s/%s\n", ref.Vault, ref.Name)
 		}
+	case "generate":
+		if len(os.Args) < 4 {
+			fmt.Fprintf(os.Stderr, "Usage: veil generate <vault> <name> [--length N] [--no-symbols]\n")
+			os.Exit(1)
+		}
+
+		opts := parseGenerateFlags(os.Args[4:])
+		secret, err := v.Generate(os.Args[2], os.Args[3], opts)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+			os.Exit(1)
+		}
+
+		fmt.Printf("Generated secret: %s\n", secret)
+		fmt.Printf("Stored in %s/%s\n", os.Args[2], os.Args[3])
 	default:
 		fmt.Fprintf(os.Stderr, "Error: Unknown command: %s\n", command)
 		printUsage(os.Stderr)
@@ -220,6 +237,13 @@ func printUsage(w *os.File) {
 	fmt.Fprintln(w, "  vaults                      List all vaults")
 	fmt.Fprintln(w, "  search <pattern>            Search secrets across all vaults")
 	fmt.Fprintln(w, "                              Supports * wildcard (e.g., DB_*)")
+	fmt.Fprintln(w, "  generate <vault> <name>     Generate and store a secret")
+	fmt.Fprintln(w, "                              --type <type>   Secret type: password|apikey|jwt")
+	fmt.Fprintln(w, "                              --length N      Password length (default: 32)")
+	fmt.Fprintln(w, "                              --no-symbols    Alphanumeric only")
+	fmt.Fprintln(w, "                              --format <fmt>  API key format: uuid|hex|base64")
+	fmt.Fprintln(w, "                              --prefix <str>  Prefix for API keys (e.g., sk_live_)")
+	fmt.Fprintln(w, "                              --bits N        JWT secret bits: 256|512 (default: 256)")
 	fmt.Fprintln(w, "  export <vault>              Export vault secrets to .env file")
 	fmt.Fprintln(w, "                              --to <path>     Output file path (default: .env)")
 	fmt.Fprintln(w, "                              --force         Overwrite existing file")
@@ -330,4 +354,50 @@ func plural(n int) string {
 		return ""
 	}
 	return "es"
+}
+
+func parseGenerateFlags(args []string) generator.Options {
+	opts := generator.Options{
+		Type: "password",
+	}
+
+	for i := 0; i < len(args); i++ {
+		switch args[i] {
+		case "--type":
+			if i+1 < len(args) {
+				opts.Type = args[i+1]
+				i++
+			}
+		case "--format":
+			if i+1 < len(args) {
+				opts.Format = args[i+1]
+				i++
+			}
+		case "--prefix":
+			if i+1 < len(args) {
+				opts.Prefix = args[i+1]
+				i++
+			}
+		case "--length":
+			if i+1 < len(args) {
+				length, err := strconv.Atoi(args[i+1])
+				if err == nil {
+					opts.Length = length
+				}
+				i++
+			}
+		case "--bits":
+			if i+1 < len(args) {
+				bits, err := strconv.Atoi(args[i+1])
+				if err == nil {
+					opts.Bits = bits
+				}
+				i++
+			}
+		case "--no-symbols":
+			opts.NoSymbols = true
+		}
+	}
+
+	return opts
 }

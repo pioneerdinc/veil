@@ -5,6 +5,7 @@ import (
 
 	"github.com/ossydotpy/veil/internal/crypto"
 	"github.com/ossydotpy/veil/internal/exporter"
+	"github.com/ossydotpy/veil/internal/generator"
 	"github.com/ossydotpy/veil/internal/store"
 )
 
@@ -101,4 +102,19 @@ func (a *App) Export(vault string, opts exporter.ExportOptions) (*exporter.Previ
 	}
 
 	return preview, nil
+}
+
+func (a *App) Generate(vault, name string, opts generator.Options) (string, error) {
+	// Generate the secret
+	secret, err := generator.Generate(opts)
+	if err != nil {
+		return "", err
+	}
+
+	// Store in vault
+	if err := a.Set(vault, name, secret); err != nil {
+		return "", err
+	}
+
+	return secret, nil
 }
