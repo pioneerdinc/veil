@@ -52,6 +52,17 @@ func (a *App) Reset() error {
 	return a.store.Nuke()
 }
 
+func (a *App) Search(pattern string) ([]store.SecretRef, error) {
+	var results []store.SecretRef
+	for ref, err := range a.store.Search(pattern) {
+		if err != nil {
+			return nil, err
+		}
+		results = append(results, ref)
+	}
+	return results, nil
+}
+
 func (a *App) GetAllSecrets(vault string) (map[string]string, error) {
 	secrets := make(map[string]string)
 	for name, err := range a.List(vault) {

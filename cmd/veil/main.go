@@ -178,6 +178,28 @@ func main() {
 		} else {
 			printExportResult(preview, opts, vault)
 		}
+	case "search":
+		if len(os.Args) < 3 {
+			fmt.Fprintf(os.Stderr, "Usage: veil search <pattern>\n")
+			os.Exit(1)
+		}
+
+		pattern := os.Args[2]
+		results, err := v.Search(pattern)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+			os.Exit(1)
+		}
+
+		if len(results) == 0 {
+			fmt.Println("No matches found")
+			return
+		}
+
+		fmt.Printf("Found %d match%s:\n", len(results), plural(len(results)))
+		for _, ref := range results {
+			fmt.Printf("  %s/%s\n", ref.Vault, ref.Name)
+		}
 	default:
 		fmt.Fprintf(os.Stderr, "Error: Unknown command: %s\n", command)
 		printUsage(os.Stderr)
@@ -196,6 +218,8 @@ func printUsage(w *os.File) {
 	fmt.Fprintln(w, "  delete <vault> <name>       Remove a secret")
 	fmt.Fprintln(w, "  list <vault>                List all secret names in a vault")
 	fmt.Fprintln(w, "  vaults                      List all vaults")
+	fmt.Fprintln(w, "  search <pattern>            Search secrets across all vaults")
+	fmt.Fprintln(w, "                              Supports * wildcard (e.g., DB_*)")
 	fmt.Fprintln(w, "  export <vault>              Export vault secrets to .env file")
 	fmt.Fprintln(w, "                              --to <path>     Output file path (default: .env)")
 	fmt.Fprintln(w, "                              --force         Overwrite existing file")
@@ -299,4 +323,11 @@ func printExportResult(preview *exporter.Preview, opts exporter.ExportOptions, v
 		count := len(preview.NewKeys) + len(preview.UpdatedKeys)
 		fmt.Printf("Exported %d secrets from '%s' to %s\n", count, vault, opts.TargetPath)
 	}
+}
+
+func plural(n int) string {
+	if n == 1 {
+		return ""
+	}
+	return "es"
 }

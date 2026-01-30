@@ -6,6 +6,7 @@ import (
 	"iter"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/ossydotpy/veil/internal/store"
 	_ "modernc.org/sqlite"
@@ -131,6 +132,38 @@ func (s *SqliteStore) ListVaults() iter.Seq2[string, error] {
 			}
 		}
 	}
+}
+
+func (s *SqliteStore) Search(pattern string) iter.Seq2[store.SecretRef, error] {
+	return func(yield func(store.SecretRef, error) bool) {
+		sqlPattern := convertPattern(pattern)
+		query := `SELECT vault, name FROM secrets WHERE LOWER(name) LIKE LOWER(?) ORDER BY vault ASC, name ASC;`
+		rows, err := s.db.Query(query, sqlPattern)
+		if err != nil {
+			yield(store.SecretRef{}, fmt.Errorf("failed to search secrets: %w", err))
+			return
+		}
+		defer rows.Close()
+
+		for rows.Next() {
+			var ref store.SecretRef
+			if err := rows.Scan(&ref.Vault, &ref.Name); err != nil {
+				if !yield(store.SecretRef{}, err) {
+					return
+				}
+				continue
+			}
+			if !yield(ref, nil) {
+				return
+			}
+		}
+	}
+}
+
+func convertPattern(pattern string) string {
+	pattern = strings.ReplaceAll(pattern, "*", "%")
+	pattern = strings.ReplaceAll(pattern, "?", "_")
+	return pattern
 }
 
 func (s *SqliteStore) Nuke() error {
