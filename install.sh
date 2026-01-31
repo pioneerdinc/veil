@@ -36,7 +36,7 @@ detect_platform() {
     esac
 
     if [ "$os" = "unknown" ] || [ "$arch" = "unknown" ]; then
-        echo -e "${RED}Error: Unsupported platform: $(uname -s) $(uname -m)${NC}"
+        echo -e "${RED}Error: Unsupported platform: $(uname -s) $(uname -m)${NC}" >&2
         exit 1
     fi
 
@@ -57,16 +57,16 @@ download_binary() {
     local download_url="https://github.com/${REPO}/releases/download/${version}/${BINARY}_${platform}"
     local output_path="${tmp_dir}/${BINARY}"
 
-    echo -e "${YELLOW}Downloading ${BINARY} ${version} for ${platform}...${NC}"
+    echo -e "${YELLOW}Downloading ${BINARY} ${version} for ${platform}...${NC}" >&2
 
     if ! curl -fsSL "$download_url" -o "$output_path"; then
-        echo -e "${RED}Error: Failed to download from ${download_url}${NC}"
-        echo -e "${YELLOW}Trying alternative URL...${NC}"
+        echo -e "${RED}Error: Failed to download from ${download_url}${NC}" >&2
+        echo -e "${YELLOW}Trying alternative URL...${NC}" >&2
         
         # Try with .tar.gz extension
         download_url="https://github.com/${REPO}/releases/download/${version}/${BINARY}_${version#v}_${platform}.tar.gz"
         if ! curl -fsSL "$download_url" -o "${tmp_dir}/veil.tar.gz"; then
-            echo -e "${RED}Error: Failed to download binary${NC}"
+            echo -e "${RED}Error: Failed to download binary${NC}" >&2
             exit 1
         fi
         
@@ -86,39 +86,39 @@ install_binary() {
     if [ -w "$install_dir" ]; then
         mv "$binary_path" "${install_dir}/${BINARY}"
     else
-        echo -e "${YELLOW}Requires sudo to install to ${install_dir}${NC}"
+        echo -e "${YELLOW}Requires sudo to install to ${install_dir}${NC}" >&2
         sudo mv "$binary_path" "${install_dir}/${BINARY}"
     fi
 
-    echo -e "${GREEN}✓ Installed ${BINARY} to ${install_dir}/${BINARY}${NC}"
+    echo -e "${GREEN}✓ Installed ${BINARY} to ${install_dir}/${BINARY}${NC}" >&2
 }
 
 # Check if binary is in PATH
 check_path() {
     if ! command -v "$BINARY" &> /dev/null; then
-        echo -e "${YELLOW}Warning: ${INSTALL_DIR} is not in your PATH${NC}"
-        echo -e "${YELLOW}Add this to your shell profile:${NC}"
-        echo "export PATH=\"\$PATH:${INSTALL_DIR}\""
+        echo -e "${YELLOW}Warning: ${INSTALL_DIR} is not in your PATH${NC}" >&2
+        echo -e "${YELLOW}Add this to your shell profile:${NC}" >&2
+        echo "export PATH=\"\$PATH:${INSTALL_DIR}\"" >&2
     else
-        echo -e "${GREEN}✓ ${BINARY} is now available in your PATH${NC}"
+        echo -e "${GREEN}✓ ${BINARY} is now available in your PATH${NC}" >&2
     fi
 }
 
 # Main installation
 main() {
-    echo -e "${GREEN}Installing Veil...${NC}"
+    echo -e "${GREEN}Installing Veil...${NC}" >&2
 
     # Detect platform
     platform=$(detect_platform)
-    echo "Detected platform: $platform"
+    echo "Detected platform: $platform" >&2
 
     # Get version
     version=$(get_latest_version)
     if [ -z "$version" ]; then
-        echo -e "${RED}Error: Could not determine latest version${NC}"
+        echo -e "${RED}Error: Could not determine latest version${NC}" >&2
         exit 1
     fi
-    echo "Latest version: $version"
+    echo "Latest version: $version" >&2
 
     # Create temp directory
     tmp_dir=$(mktemp -d)
@@ -133,8 +133,8 @@ main() {
     # Verify
     check_path
 
-    echo ""
-    echo -e "${GREEN}Installation complete!${NC}"
+    echo "" >&2
+    echo -e "${GREEN}Installation complete!${NC}" >&2
     echo "Run 'veil --help' to get started"
     echo ""
     echo "Next steps:"
