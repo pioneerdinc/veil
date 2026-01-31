@@ -1,16 +1,19 @@
 package main
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
 	"strconv"
+	"strings"
 
 	"github.com/ossydotpy/veil/internal/app"
 	"github.com/ossydotpy/veil/internal/config"
 	"github.com/ossydotpy/veil/internal/crypto"
 	"github.com/ossydotpy/veil/internal/exporter"
 	"github.com/ossydotpy/veil/internal/generator"
+	"github.com/ossydotpy/veil/internal/quick"
 	"github.com/ossydotpy/veil/internal/store"
 	"github.com/ossydotpy/veil/internal/store/sqlite"
 )
@@ -35,7 +38,7 @@ func main() {
 	if command == "init" {
 		cfg := config.LoadConfig()
 		if _, err := os.Stat(cfg.DbPath); err == nil {
-			fmt.Fprintf(os.Stderr, "⚠️  Warning: A database already exists at %s\n", cfg.DbPath)
+			fmt.Fprintf(os.Stderr, "Warning: A database already exists at %s\n", cfg.DbPath)
 			fmt.Fprintf(os.Stderr, "Generating a new key and using it will make all existing secrets UNREADABLE.\n\n")
 		}
 
@@ -48,6 +51,12 @@ func main() {
 		fmt.Println(logo)
 		fmt.Printf("\nYour new MASTER_KEY is:\n\n%s\n\nSAVE THIS KEY! If you lose it, your secrets are gone forever.\n", key)
 		fmt.Println("Export it to your environment:\nexport MASTER_KEY=" + key)
+		return
+	}
+
+	// Handle quick command early - it doesn't need master key or database
+	if command == "quick" {
+		runQuickCommand(os.Args[2:])
 		return
 	}
 
@@ -280,6 +289,19 @@ func printUsage(w *os.File) {
 	fmt.Fprintln(w, "                              --dry-run       Preview without writing")
 	fmt.Fprintln(w, "                              --backup        Create backup before overwriting")
 	fmt.Fprintln(w, "                              --format <fmt>  Output format (env, json, yaml)")
+	fmt.Fprintln(w, "  quick [type]                Generate ephemeral secret (no storage)")
+	fmt.Fprintln(w, "                              Types: password|apikey|jwt|hex|base64|uuid")
+	fmt.Fprintln(w, "                              --length N      Password length (default: 32)")
+	fmt.Fprintln(w, "                              --no-symbols    Alphanumeric only")
+	fmt.Fprintln(w, "                              --format <fmt>  API key format: uuid|hex|base64")
+	fmt.Fprintln(w, "                              --prefix <str>  Prefix for generated value")
+	fmt.Fprintln(w, "                              --bits N        JWT secret bits (default: 256)")
+	fmt.Fprintln(w, "                              --count N       Generate multiple secrets")
+	fmt.Fprintln(w, "                              --to <path>     Append to .env file")
+	fmt.Fprintln(w, "                              --name <KEY>    Env variable name (required with --to)")
+	fmt.Fprintln(w, "                              --force         Overwrite existing key in .env")
+	fmt.Fprintln(w, "                              --template <s>  Custom output format (use {value})")
+	fmt.Fprintln(w, "                              --batch <file>  Generate from JSON config file")
 }
 
 func isCryptoError(err error) bool {
@@ -431,6 +453,196 @@ func parseGenerateFlags(args []string) generator.Options {
 			}
 		case "--force":
 			opts.Force = true
+		}
+	}
+
+	return opts
+}
+
+// runQuickCommand handles ephemeral secret generation without database
+func runQuickCommand(args []string) {
+	opts := parseQuickFlags(args)
+
+	qg := quick.New()
+
+	// Handle batch mode
+	if opts.BatchFile != "" {
+		runQuickBatch(qg, opts)
+		return
+	}
+
+	// Handle count > 1
+	if opts.Count > 1 {
+		results, err := qg.GenerateMultiple(opts.QuickOptions)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+			os.Exit(1)
+		}
+
+		fmt.Printf("Generated %d %ss:\n", len(results), opts.QuickOptions.Type)
+		for i, result := range results {
+			fmt.Printf("%d. %s\n", i+1, result.Value)
+		}
+		return
+	}
+
+	// Single generation
+	result, err := qg.Generate(opts.QuickOptions)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+		os.Exit(1)
+	}
+
+	// Handle file append
+	if opts.QuickOptions.ToFile != "" {
+		if err := quick.AppendToEnvFile(opts.QuickOptions.ToFile, opts.QuickOptions.EnvName, result.Value, opts.QuickOptions.Force); err != nil {
+			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+			os.Exit(1)
+		}
+		fmt.Printf("Generated: %s\n", result.Value)
+		if opts.QuickOptions.Force {
+			fmt.Printf("Updated %s in %s\n", opts.QuickOptions.EnvName, opts.QuickOptions.ToFile)
+		} else {
+			fmt.Printf("Appended %s to %s\n", opts.QuickOptions.EnvName, opts.QuickOptions.ToFile)
+		}
+		return
+	}
+
+	// Display to terminal with template
+	output := quick.FormatOutput(result, opts.QuickOptions.Template)
+	fmt.Println(output)
+}
+
+func runQuickBatch(qg *quick.Generator, opts quickCommandOptions) {
+	// Load batch config
+	data, err := os.ReadFile(opts.BatchFile)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error: failed to read batch file: %v\n", err)
+		os.Exit(1)
+	}
+
+	var config quick.BatchConfig
+	if err := json.Unmarshal(data, &config); err != nil {
+		fmt.Fprintf(os.Stderr, "Error: failed to parse batch file: %v\n", err)
+		os.Exit(1)
+	}
+
+	results, err := qg.GenerateBatch(config)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+		os.Exit(1)
+	}
+
+	// Handle file append
+	if opts.QuickOptions.ToFile != "" {
+		if err := quick.AppendBatchToEnvFile(opts.QuickOptions.ToFile, results, opts.QuickOptions.Force); err != nil {
+			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+			os.Exit(1)
+		}
+		fmt.Printf("Batch: %s\n", opts.BatchFile)
+		fmt.Printf("Generated %d secrets appended to %s:\n", len(results), opts.QuickOptions.ToFile)
+		for _, r := range results {
+			fmt.Printf("  - %s\n", r.EnvName)
+		}
+		return
+	}
+
+	// Output to terminal
+	fmt.Printf("Batch: %s\n", opts.BatchFile)
+	fmt.Printf("Generated %d secrets:\n", len(results))
+	for _, r := range results {
+		fmt.Printf("  %s: %s\n", r.EnvName, r.Value)
+	}
+}
+
+type quickCommandOptions struct {
+	QuickOptions quick.Options
+	BatchFile    string
+	Count        int
+}
+
+func parseQuickFlags(args []string) quickCommandOptions {
+	opts := quickCommandOptions{
+		QuickOptions: quick.Options{
+			Type: "password",
+		},
+	}
+
+	i := 0
+
+	// First non-flag argument is the type (optional)
+	if len(args) > 0 && !strings.HasPrefix(args[0], "-") {
+		opts.QuickOptions.Type = args[0]
+
+		// Handle shorthand types (hex, base64, uuid -> apikey with format)
+		if format := quick.GetFormatFromType(args[0]); format != "" {
+			opts.QuickOptions.Type = "apikey"
+			opts.QuickOptions.Format = format
+		}
+
+		i = 1
+	}
+
+	for ; i < len(args); i++ {
+		switch args[i] {
+		case "--length":
+			if i+1 < len(args) {
+				length, err := strconv.Atoi(args[i+1])
+				if err == nil {
+					opts.QuickOptions.Length = length
+				}
+				i++
+			}
+		case "--format":
+			if i+1 < len(args) {
+				opts.QuickOptions.Format = args[i+1]
+				i++
+			}
+		case "--prefix":
+			if i+1 < len(args) {
+				opts.QuickOptions.Prefix = args[i+1]
+				i++
+			}
+		case "--bits":
+			if i+1 < len(args) {
+				bits, err := strconv.Atoi(args[i+1])
+				if err == nil {
+					opts.QuickOptions.Bits = bits
+				}
+				i++
+			}
+		case "--no-symbols":
+			opts.QuickOptions.NoSymbols = true
+		case "--count":
+			if i+1 < len(args) {
+				count, err := strconv.Atoi(args[i+1])
+				if err == nil {
+					opts.Count = count
+				}
+				i++
+			}
+		case "--to":
+			if i+1 < len(args) {
+				opts.QuickOptions.ToFile = args[i+1]
+				i++
+			}
+		case "--name":
+			if i+1 < len(args) {
+				opts.QuickOptions.EnvName = args[i+1]
+				i++
+			}
+		case "--force":
+			opts.QuickOptions.Force = true
+		case "--template":
+			if i+1 < len(args) {
+				opts.QuickOptions.Template = args[i+1]
+				i++
+			}
+		case "--batch":
+			if i+1 < len(args) {
+				opts.BatchFile = args[i+1]
+				i++
+			}
 		}
 	}
 

@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Veil installer script
-# Usage: curl -fsSL https://raw.githubusercontent.com/ossydotpy/veil/main/install.sh | bash
+# Usage: curl -fsSL https://raw.githubusercontent.com/ossydotpy/veil/master/install.sh | bash
 
 set -e
 

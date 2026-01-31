@@ -22,7 +22,7 @@ A lightweight, secure CLI secrets manager for developers. Store passwords, API k
 
 ```bash
 # Quick install (Linux/macOS)
-curl -fsSL https://raw.githubusercontent.com/ossydotpy/veil/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/ossydotpy/veil/master/install.sh | bash
 
 # With Go
 go install github.com/ossydotpy/veil/cmd/veil@latest
