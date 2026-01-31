@@ -157,8 +157,8 @@ func parseEnvFileWithLines(path string) []envLine {
 
 		trimmed := strings.TrimSpace(text)
 		if trimmed != "" && !strings.HasPrefix(trimmed, "#") {
-			if k, v, found := strings.Cut(text, "="); found {
-				line.key = k
+			if k, v, found := strings.Cut(trimmed, "="); found {
+				line.key = strings.TrimSpace(k)
 				line.value = unescapeValue(v)
 			}
 		}
