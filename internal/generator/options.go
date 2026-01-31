@@ -8,4 +8,6 @@ type Options struct {
 	Prefix    string // For API keys
 	Bits      int    // For JWT
 	NoSymbols bool   // For passwords
+	ToEnv     string // Path to .env file
+	Force     bool   // Overwrite existing in .env
 }

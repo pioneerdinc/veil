@@ -211,12 +211,26 @@ func main() {
 		opts := parseGenerateFlags(os.Args[4:])
 		secret, err := v.Generate(os.Args[2], os.Args[3], opts)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-			os.Exit(1)
+			// Check if it's a warning about existing key in .env
+			if strings.Contains(err.Error(), "already exists") {
+				fmt.Printf("Generated secret: %s\n", secret)
+				fmt.Printf("Stored in %s/%s\n", os.Args[2], os.Args[3])
+				fmt.Fprintf(os.Stderr, "Warning: %v\n", err)
+			} else {
+				fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+				os.Exit(1)
+			}
+		} else {
+			fmt.Printf("Generated secret: %s\n", secret)
+			fmt.Printf("Stored in %s/%s\n", os.Args[2], os.Args[3])
+			if opts.ToEnv != "" {
+				if opts.Force {
+					fmt.Printf("Updated in %s\n", opts.ToEnv)
+				} else {
+					fmt.Printf("Appended to %s\n", opts.ToEnv)
+				}
+			}
 		}
-
-		fmt.Printf("Generated secret: %s\n", secret)
-		fmt.Printf("Stored in %s/%s\n", os.Args[2], os.Args[3])
 	default:
 		fmt.Fprintf(os.Stderr, "Error: Unknown command: %s\n", command)
 		printUsage(os.Stderr)
@@ -244,6 +258,8 @@ func printUsage(w *os.File) {
 	fmt.Fprintln(w, "                              --format <fmt>  API key format: uuid|hex|base64")
 	fmt.Fprintln(w, "                              --prefix <str>  Prefix for API keys (e.g., sk_live_)")
 	fmt.Fprintln(w, "                              --bits N        JWT secret bits: 256|512 (default: 256)")
+	fmt.Fprintln(w, "                              --to-env <path> Append to .env file")
+	fmt.Fprintln(w, "                              --force         Overwrite existing key in .env")
 	fmt.Fprintln(w, "  export <vault>              Export vault secrets to .env file")
 	fmt.Fprintln(w, "                              --to <path>     Output file path (default: .env)")
 	fmt.Fprintln(w, "                              --force         Overwrite existing file")
@@ -396,6 +412,13 @@ func parseGenerateFlags(args []string) generator.Options {
 			}
 		case "--no-symbols":
 			opts.NoSymbols = true
+		case "--to-env":
+			if i+1 < len(args) {
+				opts.ToEnv = args[i+1]
+				i++
+			}
+		case "--force":
+			opts.Force = true
 		}
 	}
 

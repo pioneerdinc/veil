@@ -1,7 +1,12 @@
 package app
 
 import (
+	"bufio"
+	"bytes"
+	"fmt"
 	"iter"
+	"os"
+	"strings"
 
 	"github.com/ossydotpy/veil/internal/crypto"
 	"github.com/ossydotpy/veil/internal/exporter"
@@ -116,5 +121,76 @@ func (a *App) Generate(vault, name string, opts generator.Options) (string, erro
 		return "", err
 	}
 
+	if opts.ToEnv != "" {
+		if err := a.appendToEnvFile(name, secret, opts.ToEnv, opts.Force); err != nil {
+			return secret, err
+		}
+	}
+
 	return secret, nil
+}
+
+// appendToEnvFile appends a key-value pair to an .env file
+func (a *App) appendToEnvFile(key, value, path string, force bool) error {
+	if _, err := os.Stat(path); os.IsNotExist(err) {
+		return fmt.Errorf("%s does not exist", path)
+	}
+
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return fmt.Errorf("failed to read %s: %w", path, err)
+	}
+
+	keyExists := false
+	scanner := bufio.NewScanner(bytes.NewReader(data))
+	for scanner.Scan() {
+		line := strings.TrimSpace(scanner.Text())
+		if line == "" || strings.HasPrefix(line, "#") {
+			continue
+		}
+		if existingKey, _, found := strings.Cut(line, "="); found {
+			if existingKey == key {
+				keyExists = true
+				break
+			}
+		}
+	}
+
+	if keyExists && !force {
+		return fmt.Errorf("%s already exists in %s, use --force to overwrite", key, path)
+	}
+
+	var newContent strings.Builder
+	if keyExists && force {
+		scanner := bufio.NewScanner(bytes.NewReader(data))
+		for scanner.Scan() {
+			line := scanner.Text()
+			trimmed := strings.TrimSpace(line)
+			if trimmed == "" || strings.HasPrefix(trimmed, "#") {
+				newContent.WriteString(line)
+				newContent.WriteString("\n")
+				continue
+			}
+			if existingKey, _, found := strings.Cut(trimmed, "="); found {
+				if existingKey == key {
+					newContent.WriteString(fmt.Sprintf("%s=%s\n", key, value))
+					continue
+				}
+			}
+			newContent.WriteString(line)
+			newContent.WriteString("\n")
+		}
+	} else {
+		newContent.Write(data)
+		if !strings.HasSuffix(newContent.String(), "\n") {
+			newContent.WriteString("\n")
+		}
+		newContent.WriteString(fmt.Sprintf("%s=%s\n", key, value))
+	}
+
+	if err := os.WriteFile(path, []byte(newContent.String()), 0600); err != nil {
+		return fmt.Errorf("failed to write %s: %w", path, err)
+	}
+
+	return nil
 }
