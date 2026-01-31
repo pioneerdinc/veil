@@ -22,6 +22,8 @@ const logo = `██╗   ██╗███████╗██╗██╗
  ╚████╔╝ ███████╗██║███████╗
   ╚═══╝  ╚══════╝╚═╝╚══════╝`
 
+var version = "dev"
+
 func main() {
 	if len(os.Args) < 2 {
 		printUsage(os.Stderr)
@@ -47,6 +49,16 @@ func main() {
 		fmt.Printf("\nYour new MASTER_KEY is:\n\n%s\n\nSAVE THIS KEY! If you lose it, your secrets are gone forever.\n", key)
 		fmt.Println("Export it to your environment:\nexport MASTER_KEY=" + key)
 		return
+	}
+
+	if command == "--help" || command == "-h" || command == "help" {
+		printUsage(os.Stdout)
+		os.Exit(0)
+	}
+
+	if command == "--version" || command == "-v" || command == "version" {
+		fmt.Printf("veil version %s\n", version)
+		os.Exit(0)
 	}
 
 	cfg := config.LoadConfig()
@@ -243,6 +255,7 @@ func printUsage(w *os.File) {
 	fmt.Fprintln(w, "Usage: veil <command> [arguments]")
 	fmt.Fprintln(w, "\nCommands:")
 	fmt.Fprintln(w, "  init                        Generate a new master key")
+	fmt.Fprintln(w, "  version                     Show version information")
 	fmt.Fprintln(w, "  reset                       Delete all secrets and start fresh")
 	fmt.Fprintln(w, "  set <vault> <name> <value>  Store a secret")
 	fmt.Fprintln(w, "  get <vault> <name>          Retrieve a secret")
