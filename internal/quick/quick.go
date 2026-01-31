@@ -38,6 +38,7 @@ type BatchSecret struct {
 	Format    string `json:"format,omitempty"`
 	Bits      int    `json:"bits,omitempty"`
 	NoSymbols bool   `json:"no_symbols,omitempty"`
+	Count     int    `json:"count,omitempty"`
 	Prefix    string `json:"prefix,omitempty"`
 	Template  string `json:"template,omitempty"`
 }
