@@ -133,7 +133,7 @@ func (a *App) Generate(vault, name string, opts generator.Options) (string, erro
 // appendToEnvFile appends a key-value pair to an .env file
 func (a *App) appendToEnvFile(key, value, path string, force bool) error {
 	if _, err := os.Stat(path); os.IsNotExist(err) {
-		return fmt.Errorf("%s does not exist", path)
+		return fmt.Errorf("%s: %w", path, ErrEnvFileNotExist)
 	}
 
 	data, err := os.ReadFile(path)
@@ -157,7 +157,7 @@ func (a *App) appendToEnvFile(key, value, path string, force bool) error {
 	}
 
 	if keyExists && !force {
-		return fmt.Errorf("%s already exists in %s, use --force to overwrite", key, path)
+		return fmt.Errorf("%s: %w", key, ErrKeyExistsInEnv)
 	}
 
 	var newContent strings.Builder

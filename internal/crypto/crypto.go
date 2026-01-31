@@ -5,7 +5,6 @@ import (
 	"crypto/cipher"
 	"crypto/rand"
 	"encoding/hex"
-	"errors"
 	"fmt"
 	"io"
 )
@@ -17,11 +16,11 @@ type Engine struct {
 func NewEngine(keyHex string) (*Engine, error) {
 	key, err := hex.DecodeString(keyHex)
 	if err != nil {
-		return nil, fmt.Errorf("invalid master key format (must be hex): %w", err)
+		return nil, fmt.Errorf("%w: %v", ErrInvalidKeyFormat, err)
 	}
 
 	if len(key) != 32 {
-		return nil, fmt.Errorf("invalid key length: expected 32 bytes, got %d", len(key))
+		return nil, fmt.Errorf("%w: expected 32 bytes, got %d", ErrInvalidKeyLength, len(key))
 	}
 	return &Engine{key: key}, nil
 }
@@ -66,13 +65,13 @@ func (e *Engine) Decrypt(encryptedValue string) (string, error) {
 
 	nonceSize := gcm.NonceSize()
 	if len(ciphertext) < nonceSize {
-		return "", errors.New("ciphertext too short")
+		return "", ErrCiphertextTooShort
 	}
 
 	nonce, ciphertext := ciphertext[:nonceSize], ciphertext[nonceSize:]
 	plaintext, err := gcm.Open(nil, nonce, ciphertext, nil)
 	if err != nil {
-		return "", fmt.Errorf("error decrypting: %w", err)
+		return "", fmt.Errorf("%w: %v", ErrDecryptionFailed, err)
 	}
 
 	return string(plaintext), nil

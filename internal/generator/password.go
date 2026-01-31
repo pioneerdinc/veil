@@ -30,10 +30,10 @@ func (g *PasswordGenerator) Generate(opts Options) (string, error) {
 		length = defaultPasswordLength
 	}
 	if length < minPasswordLength {
-		return "", fmt.Errorf("password length must be at least %d characters", minPasswordLength)
+		return "", fmt.Errorf("%s: must be at least %d characters", ErrInvalidLength, minPasswordLength)
 	}
 	if length > maxPasswordLength {
-		return "", fmt.Errorf("password length must not exceed %d characters", maxPasswordLength)
+		return "", fmt.Errorf("%s: must not exceed %d characters", ErrInvalidLength, maxPasswordLength)
 	}
 
 	charset := fullCharset

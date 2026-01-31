@@ -34,7 +34,7 @@ func (g *APIKeyGenerator) Generate(opts Options) (string, error) {
 	case "base64":
 		secret, err = generateBase64(length)
 	default:
-		return "", fmt.Errorf("unsupported API key format: %s", format)
+		return "", fmt.Errorf("%s: %s", ErrUnsupportedFormat, format)
 	}
 
 	if err != nil {

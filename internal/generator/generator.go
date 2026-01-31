@@ -18,7 +18,7 @@ func Get(secretType string) (Generator, error) {
 	case "jwt":
 		return &JWTGenerator{}, nil
 	default:
-		return nil, fmt.Errorf("unknown generator type: %s", secretType)
+		return nil, fmt.Errorf("%s: %s", ErrUnknownGeneratorType, secretType)
 	}
 }
 

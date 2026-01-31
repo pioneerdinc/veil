@@ -1,10 +1,10 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"strconv"
-	"strings"
 
 	"github.com/ossydotpy/veil/internal/app"
 	"github.com/ossydotpy/veil/internal/config"
@@ -212,7 +212,7 @@ func main() {
 		secret, err := v.Generate(os.Args[2], os.Args[3], opts)
 		if err != nil {
 			// Check if it's a warning about existing key in .env
-			if strings.Contains(err.Error(), "already exists") {
+			if errors.Is(err, app.ErrKeyExistsInEnv) {
 				fmt.Printf("Generated secret: %s\n", secret)
 				fmt.Printf("Stored in %s/%s\n", os.Args[2], os.Args[3])
 				fmt.Fprintf(os.Stderr, "Warning: %v\n", err)
@@ -273,9 +273,8 @@ func isCryptoError(err error) bool {
 	if err == nil {
 		return false
 	}
-	s := err.Error()
-	return strings.Contains(s, "cipher: message authentication failed") ||
-		strings.HasPrefix(s, "error decrypting")
+	return errors.Is(err, crypto.ErrDecryptionFailed) ||
+		errors.Is(err, crypto.ErrCiphertextTooShort)
 }
 
 func parseExportFlags(args []string) exporter.ExportOptions {

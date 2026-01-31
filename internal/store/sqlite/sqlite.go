@@ -24,7 +24,7 @@ func NewSqliteStore(dbPath string) (store.Store, error) {
 
 	db, err := sql.Open("sqlite", dbPath)
 	if err != nil {
-		return nil, fmt.Errorf("could not open sqlite db: %w", err)
+		return nil, fmt.Errorf("%w: %v", store.ErrDatabaseOpen, err)
 	}
 
 	if err := os.Chmod(dbPath, 0600); err != nil && !os.IsNotExist(err) {
@@ -48,7 +48,7 @@ PRIMARY KEY (vault, name)
 );`
 	_, err := s.db.Exec(query)
 	if err != nil {
-		return fmt.Errorf("migration failed: %w", err)
+		return fmt.Errorf("%w: %v", store.ErrMigrationFailed, err)
 	}
 	return nil
 }
@@ -57,7 +57,7 @@ func (s *SqliteStore) Save(vault, name, value string) error {
 	query := `INSERT OR REPLACE INTO secrets (vault, name, value) VALUES (?, ?, ?);`
 	_, err := s.db.Exec(query, vault, name, value)
 	if err != nil {
-		return fmt.Errorf("failed to save secret: %w", err)
+		return fmt.Errorf("%w: %v", store.ErrSaveFailed, err)
 	}
 	return nil
 }
@@ -70,7 +70,7 @@ func (s *SqliteStore) Get(vault, name string) (string, error) {
 		return "", store.ErrNotFound
 	}
 	if err != nil {
-		return "", fmt.Errorf("failed to get secret: %w", err)
+		return "", fmt.Errorf("%w: %v", store.ErrGetFailed, err)
 	}
 	return value, nil
 }
@@ -79,7 +79,7 @@ func (s *SqliteStore) Delete(vault, name string) error {
 	query := `DELETE FROM secrets WHERE vault = ? AND name = ?;`
 	_, err := s.db.Exec(query, vault, name)
 	if err != nil {
-		return fmt.Errorf("failed to delete secret: %w", err)
+		return fmt.Errorf("%w: %v", store.ErrDeleteFailed, err)
 	}
 	return nil
 }
@@ -89,7 +89,7 @@ func (s *SqliteStore) List(vault string) iter.Seq2[string, error] {
 		query := `SELECT name FROM secrets WHERE vault = ? ORDER BY name ASC;`
 		rows, err := s.db.Query(query, vault)
 		if err != nil {
-			yield("", fmt.Errorf("failed to list secrets: %w", err))
+			yield("", fmt.Errorf("%w: %v", store.ErrListFailed, err))
 			return
 		}
 		defer rows.Close()
@@ -114,7 +114,7 @@ func (s *SqliteStore) ListVaults() iter.Seq2[string, error] {
 		query := `SELECT DISTINCT vault FROM secrets ORDER BY vault ASC;`
 		rows, err := s.db.Query(query)
 		if err != nil {
-			yield("", fmt.Errorf("failed to list vaults: %w", err))
+			yield("", fmt.Errorf("%w: %v", store.ErrListFailed, err))
 			return
 		}
 		defer rows.Close()
@@ -170,7 +170,7 @@ func (s *SqliteStore) Nuke() error {
 	query := `DELETE FROM secrets;`
 	_, err := s.db.Exec(query)
 	if err != nil {
-		return fmt.Errorf("failed to nuke database: %w", err)
+		return fmt.Errorf("%w: %v", store.ErrNukeFailed, err)
 	}
 	_, _ = s.db.Exec("VACUUM;")
 	return nil

@@ -22,10 +22,10 @@ func (g *JWTGenerator) Generate(opts Options) (string, error) {
 	}
 
 	if bits < minJWTBits {
-		return "", fmt.Errorf("JWT secret must be at least %d bits", minJWTBits)
+		return "", fmt.Errorf("%s: must be at least %d bits", ErrInvalidJWTBits, minJWTBits)
 	}
 	if bits > maxJWTBits {
-		return "", fmt.Errorf("JWT secret must not exceed %d bits", maxJWTBits)
+		return "", fmt.Errorf("%s: must not exceed %d bits", ErrInvalidJWTBits, maxJWTBits)
 	}
 
 	// Convert bits to bytes (8 bits per byte)
