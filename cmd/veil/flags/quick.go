@@ -20,6 +20,7 @@ const (
 type QuickOptions struct {
 	quick.Options
 	BatchFile string
+	ShowHelp  bool
 }
 
 // ParseQuickFlags parses command-line flags for the quick command.
@@ -139,6 +140,8 @@ func ParseQuickFlags(args []string) (QuickOptions, error) {
 				opts.BatchFile = args[i+1]
 				i++
 			}
+		case "--help", "-h":
+			opts.ShowHelp = true
 		default:
 			return opts, fmt.Errorf("unknown flag: %s", arg)
 		}

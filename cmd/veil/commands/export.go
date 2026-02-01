@@ -39,7 +39,12 @@ func (c *ExportCommand) Execute(args []string, deps Dependencies) error {
 		return err
 	}
 
-	preview, err := deps.App.Export(vault, opts)
+	if opts.ShowHelp {
+		c.printHelp(stdout)
+		return nil
+	}
+
+	preview, err := deps.App.Export(vault, opts.ExportOptions)
 	if err != nil {
 		return err
 	}
@@ -47,7 +52,7 @@ func (c *ExportCommand) Execute(args []string, deps Dependencies) error {
 	if opts.DryRun {
 		printPreview(stdout, preview, opts.TargetPath)
 	} else {
-		printExportResult(stdout, preview, opts, vault)
+		printExportResult(stdout, preview, opts.ExportOptions, vault)
 	}
 
 	return nil
@@ -96,6 +101,30 @@ func printExportResult(w io.Writer, preview *exporter.Preview, opts exporter.Exp
 		count := len(preview.NewKeys) + len(preview.UpdatedKeys)
 		fmt.Fprintf(w, "Exported %d secrets from '%s' to %s\n", count, vault, opts.TargetPath)
 	}
+}
+
+func (c *ExportCommand) printHelp(w io.Writer) {
+	fmt.Fprintln(w, "Usage: veil export <vault> [flags]")
+	fmt.Fprintln(w)
+	fmt.Fprintln(w, "Export vault secrets to a file.")
+	fmt.Fprintln(w)
+	fmt.Fprintln(w, "Flags:")
+	fmt.Fprintln(w, "  --to <path>      Output file path (default: .env)")
+	fmt.Fprintln(w, "  --format <fmt>   Output format: env (default: env)")
+	fmt.Fprintln(w, "  --force          Overwrite existing file")
+	fmt.Fprintln(w, "  --append         Append to existing file")
+	fmt.Fprintln(w, "  --dry-run        Preview without writing")
+	fmt.Fprintln(w, "  --backup         Create backup before overwriting")
+	fmt.Fprintln(w, "  --include        Include only matching keys (can be repeated)")
+	fmt.Fprintln(w, "  --exclude        Exclude matching keys (can be repeated)")
+	fmt.Fprintln(w, "  --help, -h       Show this help message")
+	fmt.Fprintln(w)
+	fmt.Fprintln(w, "Examples:")
+	fmt.Fprintln(w, "  veil export production")
+	fmt.Fprintln(w, "  veil export production --to .env.production")
+	fmt.Fprintln(w, "  veil export production --append --to .env")
+	fmt.Fprintln(w, "  veil export production --dry-run")
+	fmt.Fprintln(w, "  veil export production --include 'DB_*' --include 'API_*'")
 }
 
 func init() {

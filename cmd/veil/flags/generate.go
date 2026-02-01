@@ -15,10 +15,18 @@ const (
 	maxJWTBits        = 512
 )
 
+// GenerateOptions holds parsed flags for the generate command.
+type GenerateOptions struct {
+	generator.Options
+	ShowHelp bool
+}
+
 // ParseGenerateFlags parses command-line flags for the generate command.
-func ParseGenerateFlags(args []string) (generator.Options, error) {
-	opts := generator.Options{
-		Type: "password",
+func ParseGenerateFlags(args []string) (GenerateOptions, error) {
+	opts := GenerateOptions{
+		Options: generator.Options{
+			Type: "password",
+		},
 	}
 
 	for i := 0; i < len(args); i++ {
@@ -90,6 +98,8 @@ func ParseGenerateFlags(args []string) (generator.Options, error) {
 			}
 		case "--force":
 			opts.Force = true
+		case "--help", "-h":
+			opts.ShowHelp = true
 		default:
 			return opts, fmt.Errorf("unknown flag: %s", arg)
 		}

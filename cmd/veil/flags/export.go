@@ -7,11 +7,19 @@ import (
 	"github.com/ossydotpy/veil/internal/exporter"
 )
 
+// ExportOptions holds parsed flags for the export command.
+type ExportOptions struct {
+	exporter.ExportOptions
+	ShowHelp bool
+}
+
 // ParseExportFlags parses command-line flags for the export command.
-func ParseExportFlags(args []string) (exporter.ExportOptions, error) {
-	opts := exporter.ExportOptions{
-		TargetPath: ".env",
-		Format:     "env",
+func ParseExportFlags(args []string) (ExportOptions, error) {
+	opts := ExportOptions{
+		ExportOptions: exporter.ExportOptions{
+			TargetPath: ".env",
+			Format:     "env",
+		},
 	}
 
 	for i := 0; i < len(args); i++ {
@@ -51,6 +59,8 @@ func ParseExportFlags(args []string) (exporter.ExportOptions, error) {
 				opts.Exclude = append(opts.Exclude, args[i+1])
 				i++
 			}
+		case "--help", "-h":
+			opts.ShowHelp = true
 		default:
 			return opts, fmt.Errorf("unknown flag: %s", arg)
 		}

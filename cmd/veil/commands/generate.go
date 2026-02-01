@@ -44,11 +44,16 @@ func (c *GenerateCommand) Execute(args []string, deps Dependencies) error {
 		return err
 	}
 
-	secret, err := deps.App.Generate(vault, name, opts)
+	if opts.ShowHelp {
+		c.printHelp(stdout)
+		return nil
+	}
+
+	secret, err := deps.App.Generate(vault, name, opts.Options)
 	if err != nil {
 		// Check if it's a warning about existing key in .env
 		if errors.Is(err, app.ErrKeyExistsInEnv) {
-			printGenerateSuccess(stdout, secret, vault, name, opts.ToEnv, opts.Force)
+			printGenerateSuccess(stdout, secret, vault, name, opts.Options.ToEnv, opts.Options.Force)
 			fmt.Fprintf(stderr, "Warning: %v\n", err)
 			return nil
 		}
@@ -69,6 +74,29 @@ func printGenerateSuccess(w io.Writer, secret, vault, name, toEnv string, force 
 			fmt.Fprintf(w, "Appended to %s\n", toEnv)
 		}
 	}
+}
+
+func (c *GenerateCommand) printHelp(w io.Writer) {
+	fmt.Fprintln(w, "Usage: veil generate <vault> <name> [flags]")
+	fmt.Fprintln(w)
+	fmt.Fprintln(w, "Generate and store a secret in a vault.")
+	fmt.Fprintln(w)
+	fmt.Fprintln(w, "Flags:")
+	fmt.Fprintln(w, "  --type <type>    Secret type: password, apikey, jwt (default: password)")
+	fmt.Fprintln(w, "  --length N       Password length: 8-128 (default: 32)")
+	fmt.Fprintln(w, "  --no-symbols     Alphanumeric only (no special characters)")
+	fmt.Fprintln(w, "  --format <fmt>   API key format: uuid, hex, base64 (default: base64)")
+	fmt.Fprintln(w, "  --prefix <str>   Prefix for API key (e.g., sk_live_)")
+	fmt.Fprintln(w, "  --bits N         JWT secret bits: 128-512 (default: 256)")
+	fmt.Fprintln(w, "  --to-env <path>  Append generated secret to .env file")
+	fmt.Fprintln(w, "  --force          Overwrite existing key in .env file")
+	fmt.Fprintln(w, "  --help, -h       Show this help message")
+	fmt.Fprintln(w)
+	fmt.Fprintln(w, "Examples:")
+	fmt.Fprintln(w, "  veil generate production DB_PASSWORD")
+	fmt.Fprintln(w, "  veil generate production API_KEY --type apikey --length 48")
+	fmt.Fprintln(w, "  veil generate production JWT_SECRET --type jwt --bits 512")
+	fmt.Fprintln(w, "  veil generate production DB_PASSWORD --to-env .env --force")
 }
 
 func init() {

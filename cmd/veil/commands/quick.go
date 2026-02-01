@@ -38,6 +38,12 @@ func (c *QuickCommand) Execute(args []string, deps Dependencies) error {
 	if err != nil {
 		return err
 	}
+
+	if opts.ShowHelp {
+		c.printHelp(stdout)
+		return nil
+	}
+
 	qg := quick.New()
 
 	// Handle batch mode
@@ -132,6 +138,40 @@ func (c *QuickCommand) runSingle(qg *quick.Generator, opts flags.QuickOptions, s
 	fmt.Fprintln(stdout, output)
 
 	return nil
+}
+
+func (c *QuickCommand) printHelp(w io.Writer) {
+	fmt.Fprintln(w, "Usage: veil quick [type] [flags]")
+	fmt.Fprintln(w)
+	fmt.Fprintln(w, "Generate ephemeral secrets without storing them in the vault.")
+	fmt.Fprintln(w)
+	fmt.Fprintln(w, "Types:")
+	fmt.Fprintln(w, "  password       Generate a password (default)")
+	fmt.Fprintln(w, "  apikey         Generate an API key")
+	fmt.Fprintln(w, "  jwt            Generate a JWT secret")
+	fmt.Fprintln(w, "  uuid           Generate a UUID")
+	fmt.Fprintln(w, "  hex            Generate a hex string")
+	fmt.Fprintln(w, "  base64         Generate a base64 string")
+	fmt.Fprintln(w)
+	fmt.Fprintln(w, "Flags:")
+	fmt.Fprintln(w, "  --length N     Password length (default: 32)")
+	fmt.Fprintln(w, "  --no-symbols   Alphanumeric only (no special chars)")
+	fmt.Fprintln(w, "  --format       API key format: uuid, hex, base64")
+	fmt.Fprintln(w, "  --prefix       Prefix for generated value (e.g., sk_)")
+	fmt.Fprintln(w, "  --bits N       JWT secret bits: 128-512 (default: 256)")
+	fmt.Fprintln(w, "  --count N      Generate multiple secrets (max: 100)")
+	fmt.Fprintln(w, "  --to PATH      Append to .env file")
+	fmt.Fprintln(w, "  --name KEY     Environment variable name (required with --to)")
+	fmt.Fprintln(w, "  --force        Overwrite existing key in .env")
+	fmt.Fprintln(w, "  --template     Custom output format")
+	fmt.Fprintln(w, "  --batch FILE   Generate from JSON config file")
+	fmt.Fprintln(w, "  --help, -h     Show this help message")
+	fmt.Fprintln(w)
+	fmt.Fprintln(w, "Examples:")
+	fmt.Fprintln(w, "  veil quick                    # Generate default password")
+	fmt.Fprintln(w, "  veil quick uuid               # Generate a UUID")
+	fmt.Fprintln(w, "  veil quick password --length 64")
+	fmt.Fprintln(w, "  veil quick apikey --to .env --name API_KEY")
 }
 
 func init() {
