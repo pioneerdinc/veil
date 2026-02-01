@@ -62,6 +62,16 @@ func TestRegistry_All(t *testing.T) {
 			t.Errorf("All() missing command %q", name)
 		}
 	}
+
+	// Verify All() returns a copy, not a reference to internal map
+	// This prevents external code from modifying the registry
+	originalCount := len(all)
+	delete(all, "version")
+
+	all2 := commands.All()
+	if len(all2) != originalCount {
+		t.Error("All() returned internal map that can be modified by caller - should return a copy")
+	}
 }
 
 func TestUsageError(t *testing.T) {

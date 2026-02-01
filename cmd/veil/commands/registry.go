@@ -15,5 +15,9 @@ func Get(name string) (Command, error) {
 }
 
 func All() map[string]Command {
-	return registry
+	copy := make(map[string]Command, len(registry))
+	for k, v := range registry {
+		copy[k] = v
+	}
+	return copy
 }
