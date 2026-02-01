@@ -37,7 +37,7 @@ func ParseQuickFlags(args []string) (QuickOptions, error) {
 	if len(args) > 0 && !strings.HasPrefix(args[0], "-") {
 		opts.Type = args[0]
 
-		// Handle shorthand types (hex, base64, uuid -> apikey with format)
+		// Handle shorthand types (hex, base64, uuid, uuidv7 -> apikey with format)
 		if format := quick.GetFormatFromType(args[0]); format != "" {
 			opts.Type = "apikey"
 			opts.Format = format

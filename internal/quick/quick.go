@@ -12,7 +12,7 @@ import (
 type Options struct {
 	Type      string // password, apikey, jwt, hex, base64
 	Length    int
-	Format    string // uuid, hex, base64 (for apikey)
+	Format    string // uuid, uuidv7, hex, base64 (for apikey)
 	Prefix    string
 	Bits      int  // for jwt
 	NoSymbols bool // for passwords
@@ -146,7 +146,7 @@ func mapType(t string) string {
 		return "apikey"
 	case "jwt":
 		return "jwt"
-	case "hex", "base64", "uuid":
+	case "hex", "base64", "uuid", "uuidv7":
 		// These are apikey formats, not types
 		return "apikey"
 	default:
@@ -163,6 +163,8 @@ func GetFormatFromType(t string) string {
 		return "base64"
 	case "uuid":
 		return "uuid"
+	case "uuidv7":
+		return "uuidv7"
 	default:
 		return ""
 	}

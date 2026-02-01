@@ -85,7 +85,7 @@ func (c *GenerateCommand) printHelp(w io.Writer) {
 	fmt.Fprintln(w, "  --type <type>    Secret type: password, apikey, jwt (default: password)")
 	fmt.Fprintln(w, "  --length N       Password length: 8-128 (default: 32)")
 	fmt.Fprintln(w, "  --no-symbols     Alphanumeric only (no special characters)")
-	fmt.Fprintln(w, "  --format <fmt>   API key format: uuid, hex, base64 (default: base64)")
+	fmt.Fprintln(w, "  --format <fmt>   API key format: uuid, uuidv7, hex, base64 (default: base64)")
 	fmt.Fprintln(w, "  --prefix <str>   Prefix for API key (e.g., sk_live_)")
 	fmt.Fprintln(w, "  --bits N         JWT secret bits: 128-512 (default: 256)")
 	fmt.Fprintln(w, "  --to-env <path>  Append generated secret to .env file")

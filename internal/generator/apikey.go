@@ -5,6 +5,8 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"fmt"
+
+	"github.com/google/uuid"
 )
 
 // APIKeyGenerator generates API keys in various formats
@@ -29,6 +31,8 @@ func (g *APIKeyGenerator) Generate(opts Options) (string, error) {
 	switch format {
 	case "uuid":
 		secret, err = generateUUID()
+	case "uuidv7":
+		secret, err = generateUUIDv7()
 	case "hex":
 		secret, err = generateHex(length)
 	case "base64":
@@ -51,18 +55,17 @@ func (g *APIKeyGenerator) Generate(opts Options) (string, error) {
 
 // generateUUID generates a UUID v4
 func generateUUID() (string, error) {
-	b := make([]byte, 16)
-	_, err := rand.Read(b)
+	id := uuid.New()
+	return id.String(), nil
+}
+
+// generateUUIDv7 generates a UUID v7
+func generateUUIDv7() (string, error) {
+	id, err := uuid.NewV7()
 	if err != nil {
-		return "", fmt.Errorf("failed to generate UUID: %w", err)
+		return "", fmt.Errorf("failed to generate UUID v7: %w", err)
 	}
-
-	// Set version (4) and variant (RFC 4122)
-	b[6] = (b[6] & 0x0f) | 0x40
-	b[8] = (b[8] & 0x3f) | 0x80
-
-	return fmt.Sprintf("%x-%x-%x-%x-%x",
-		b[0:4], b[4:6], b[6:8], b[8:10], b[10:16]), nil
+	return id.String(), nil
 }
 
 // generateHex generates a hex-encoded random string

@@ -4,7 +4,7 @@ package generator
 type Options struct {
 	Type      string // password, apikey, jwt
 	Length    int
-	Format    string // uuid, hex, base64 (for apikey)
+	Format    string // uuid, uuidv7, hex, base64 (for apikey)
 	Prefix    string // For API keys
 	Bits      int    // For JWT
 	NoSymbols bool   // For passwords
