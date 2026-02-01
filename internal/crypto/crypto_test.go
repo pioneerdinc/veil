@@ -225,7 +225,7 @@ func TestEngine_DecryptInvalid(t *testing.T) {
 				return enc
 			}(),
 			wantErr: true,
-			errMsg:  "error decrypting",
+			errMsg:  "decryption failed",
 		},
 	}
 
