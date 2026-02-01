@@ -3,6 +3,7 @@ package flags
 import (
 	"fmt"
 	"strconv"
+	"strings"
 
 	"github.com/ossydotpy/veil/internal/generator"
 )
@@ -21,7 +22,14 @@ func ParseGenerateFlags(args []string) (generator.Options, error) {
 	}
 
 	for i := 0; i < len(args); i++ {
-		switch args[i] {
+		arg := args[i]
+
+		// All args should be flags (start with -)
+		if !strings.HasPrefix(arg, "-") {
+			return opts, fmt.Errorf("unexpected argument: %q (unknown flag or misplaced value)", arg)
+		}
+
+		switch arg {
 		case "--type":
 			if i+1 < len(args) {
 				opts.Type = args[i+1]
@@ -82,6 +90,8 @@ func ParseGenerateFlags(args []string) (generator.Options, error) {
 			}
 		case "--force":
 			opts.Force = true
+		default:
+			return opts, fmt.Errorf("unknown flag: %s", arg)
 		}
 	}
 

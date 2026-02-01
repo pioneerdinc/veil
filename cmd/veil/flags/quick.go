@@ -46,7 +46,14 @@ func ParseQuickFlags(args []string) (QuickOptions, error) {
 	}
 
 	for ; i < len(args); i++ {
-		switch args[i] {
+		arg := args[i]
+
+		// All remaining args should be flags (start with -)
+		if !strings.HasPrefix(arg, "-") {
+			return opts, fmt.Errorf("unexpected argument: %q (unknown flag or misplaced value)", arg)
+		}
+
+		switch arg {
 		case "--length":
 			if i+1 < len(args) {
 				length, err := strconv.Atoi(args[i+1])
@@ -132,6 +139,8 @@ func ParseQuickFlags(args []string) (QuickOptions, error) {
 				opts.BatchFile = args[i+1]
 				i++
 			}
+		default:
+			return opts, fmt.Errorf("unknown flag: %s", arg)
 		}
 	}
 

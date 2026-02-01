@@ -1,6 +1,9 @@
 package flags
 
 import (
+	"fmt"
+	"strings"
+
 	"github.com/ossydotpy/veil/internal/exporter"
 )
 
@@ -12,7 +15,14 @@ func ParseExportFlags(args []string) (exporter.ExportOptions, error) {
 	}
 
 	for i := 0; i < len(args); i++ {
-		switch args[i] {
+		arg := args[i]
+
+		// All args should be flags (start with -)
+		if !strings.HasPrefix(arg, "-") {
+			return opts, fmt.Errorf("unexpected argument: %q (unknown flag or misplaced value)", arg)
+		}
+
+		switch arg {
 		case "--to":
 			if i+1 < len(args) {
 				opts.TargetPath = args[i+1]
@@ -41,6 +51,8 @@ func ParseExportFlags(args []string) (exporter.ExportOptions, error) {
 				opts.Exclude = append(opts.Exclude, args[i+1])
 				i++
 			}
+		default:
+			return opts, fmt.Errorf("unknown flag: %s", arg)
 		}
 	}
 
