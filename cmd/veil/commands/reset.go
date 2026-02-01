@@ -39,6 +39,7 @@ func (c *ResetCommand) Execute(args []string, deps Dependencies) error {
 	}
 
 	fmt.Fprintf(stderr, "⚠️  WARNING: This will permanently DELETE ALL SECRETS in the database.\n")
+	fmt.Fprintf(stderr, "⚠️  Ensure you have backups before proceeding. This cannot be undone.\n")
 	fmt.Fprintf(stderr, "Are you sure? (type 'yes' to confirm): ")
 
 	reader := bufio.NewReader(stdin)
