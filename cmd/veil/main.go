@@ -113,9 +113,13 @@ func buildDependencies(cmd commands.Command) (commands.Dependencies, func(), err
 	}
 
 	// Validate master key and initialize crypto
+	if cfg.MasterKey == "" {
+		s.Close()
+		return commands.Dependencies{}, nil, fmt.Errorf("MASTER_KEY environment variable is not set")
+	}
 	if err := cfg.ValidateMasterKey(); err != nil {
 		s.Close()
-		return deps, nil, fmt.Errorf("%w\nRun 'veil init' to generate a new key if you don't have one", err)
+		return commands.Dependencies{}, nil, fmt.Errorf("invalid MASTER_KEY: %w (run 'veil init' if you need a new key)", err)
 	}
 
 	engine, err := crypto.NewEngine(cfg.MasterKey)
