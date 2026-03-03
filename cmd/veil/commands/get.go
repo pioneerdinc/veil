@@ -46,7 +46,7 @@ func (c *GetCommand) Execute(args []string, deps Dependencies) error {
 		return err
 	}
 
-	fmt.Fprintln(stdout, val)
+	fmt.Fprint(stdout, val)
 	return nil
 }
 
