@@ -8,6 +8,8 @@ import (
 	"slices"
 	"strings"
 	"time"
+
+	"github.com/ossydotpy/veil/internal/envfile"
 )
 
 type EnvExporter struct{}
@@ -54,7 +56,11 @@ func (e *EnvExporter) Preview(secrets map[string]string, opts ExportOptions) (*P
 
 	existingKeys := make(map[string]string)
 	if opts.Append && fileExists(opts.TargetPath) {
-		existingKeys = e.parseExistingFile(opts.TargetPath)
+		keys, err := envfile.ParseEnvFile(opts.TargetPath)
+		if err != nil {
+			return nil, err
+		}
+		existingKeys = keys
 	}
 
 	sortedKeys := sortKeys(secrets)
@@ -208,7 +214,7 @@ func (e *EnvExporter) parseFileWithStructure(path string) []envLine {
 			line.isComment = true
 		} else if key, value, found := strings.Cut(text, "="); found {
 			line.key = key
-			line.value = e.unescapeValue(value)
+			line.value = envfile.UnescapeValue(value)
 		}
 
 		lines = append(lines, line)
@@ -217,40 +223,9 @@ func (e *EnvExporter) parseFileWithStructure(path string) []envLine {
 	return lines
 }
 
-func (e *EnvExporter) parseExistingFile(path string) map[string]string {
-	result := make(map[string]string)
-	data, err := os.ReadFile(path)
-	if err != nil {
-		return result
-	}
-
-	scanner := bufio.NewScanner(bytes.NewReader(data))
-	for scanner.Scan() {
-		line := strings.TrimSpace(scanner.Text())
-		if line == "" || strings.HasPrefix(line, "#") {
-			continue
-		}
-
-		if key, value, found := strings.Cut(line, "="); found {
-			result[key] = e.unescapeValue(value)
-		}
-	}
-
-	return result
-}
-
 func (e *EnvExporter) escapeValue(value string) string {
 	if strings.Contains(value, " ") || strings.Contains(value, "\t") || strings.Contains(value, "#") {
 		return fmt.Sprintf("\"%s\"", strings.ReplaceAll(value, "\"", "\\\""))
-	}
-	return value
-}
-
-func (e *EnvExporter) unescapeValue(value string) string {
-	value = strings.TrimSpace(value)
-	if strings.HasPrefix(value, "\"") && strings.HasSuffix(value, "\"") {
-		value = value[1 : len(value)-1]
-		value = strings.ReplaceAll(value, "\\\"", "\"")
 	}
 	return value
 }
