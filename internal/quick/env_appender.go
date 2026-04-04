@@ -7,6 +7,8 @@ import (
 	"os"
 	"strings"
 	"time"
+
+	"github.com/ossydotpy/veil/internal/fsutil"
 )
 
 // AppendToEnvFile appends a single key=value pair to an .env file
@@ -15,10 +17,7 @@ func AppendToEnvFile(path, key, value string, force bool) error {
 		return fmt.Errorf("--name is required when using --to")
 	}
 
-	fileExists := false
-	if _, err := os.Stat(path); err == nil {
-		fileExists = true
-	}
+	fileExists := fsutil.FileExists(path)
 
 	if fileExists {
 		existingValue, exists := findKeyInFile(path, key)
@@ -35,10 +34,7 @@ func AppendToEnvFile(path, key, value string, force bool) error {
 
 // AppendBatchToEnvFile appends multiple secrets to an .env file
 func AppendBatchToEnvFile(path string, results []*Result, force bool) error {
-	fileExists := false
-	if _, err := os.Stat(path); err == nil {
-		fileExists = true
-	}
+	fileExists := fsutil.FileExists(path)
 
 	existingKeys := make(map[string]string)
 	if fileExists {

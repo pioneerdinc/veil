@@ -10,6 +10,8 @@ import (
 
 	"github.com/ossydotpy/veil/internal/crypto"
 	"github.com/ossydotpy/veil/internal/exporter"
+	"github.com/ossydotpy/veil/internal/filter"
+	"github.com/ossydotpy/veil/internal/fsutil"
 	"github.com/ossydotpy/veil/internal/generator"
 	"github.com/ossydotpy/veil/internal/store"
 )
@@ -91,7 +93,7 @@ func (a *App) Export(vault string, opts exporter.ExportOptions) (*exporter.Previ
 		return nil, err
 	}
 
-	filtered := exporter.FilterSecrets(secrets, opts.Include, opts.Exclude)
+	filtered := filter.FilterSecrets(secrets, opts.Include, opts.Exclude)
 
 	exp := exporter.Get(opts.Format)
 
@@ -132,7 +134,7 @@ func (a *App) Generate(vault, name string, opts generator.Options) (string, erro
 
 // appendToEnvFile appends a key-value pair to an .env file
 func (a *App) appendToEnvFile(key, value, path string, force bool) error {
-	if _, err := os.Stat(path); os.IsNotExist(err) {
+	if !fsutil.FileExists(path) {
 		return fmt.Errorf("%s: %w", path, ErrEnvFileNotExist)
 	}
 

@@ -10,6 +10,8 @@ import (
 	"time"
 
 	"github.com/ossydotpy/veil/internal/envfile"
+	"github.com/ossydotpy/veil/internal/filter"
+	"github.com/ossydotpy/veil/internal/fsutil"
 )
 
 type EnvExporter struct{}
@@ -27,7 +29,7 @@ func (e *EnvExporter) Format() string {
 }
 
 func (e *EnvExporter) Export(secrets map[string]string, opts ExportOptions) error {
-	if !opts.Append && !opts.Force && fileExists(opts.TargetPath) {
+	if !opts.Append && !opts.Force && fsutil.FileExists(opts.TargetPath) {
 		return fmt.Errorf("file %s already exists (use --force to overwrite or --append to add to it)", opts.TargetPath)
 	}
 
@@ -40,7 +42,7 @@ func (e *EnvExporter) Export(secrets map[string]string, opts ExportOptions) erro
 		return nil
 	}
 
-	if opts.Append && fileExists(opts.TargetPath) {
+	if opts.Append && fsutil.FileExists(opts.TargetPath) {
 		return e.appendToFile(secrets, preview, opts)
 	}
 
@@ -55,7 +57,7 @@ func (e *EnvExporter) Preview(secrets map[string]string, opts ExportOptions) (*P
 	}
 
 	existingKeys := make(map[string]string)
-	if opts.Append && fileExists(opts.TargetPath) {
+	if opts.Append && fsutil.FileExists(opts.TargetPath) {
 		keys, err := envfile.ParseEnvFile(opts.TargetPath)
 		if err != nil {
 			return nil, err
@@ -63,7 +65,7 @@ func (e *EnvExporter) Preview(secrets map[string]string, opts ExportOptions) (*P
 		existingKeys = keys
 	}
 
-	sortedKeys := sortKeys(secrets)
+	sortedKeys := filter.SortKeys(secrets)
 
 	for _, key := range sortedKeys {
 		value := secrets[key]
@@ -88,7 +90,7 @@ func (e *EnvExporter) Preview(secrets map[string]string, opts ExportOptions) (*P
 func (e *EnvExporter) buildContent(secrets map[string]string, preview *Preview, opts ExportOptions) string {
 	var content strings.Builder
 
-	if opts.Append && fileExists(opts.TargetPath) {
+	if opts.Append && fsutil.FileExists(opts.TargetPath) {
 		data, err := os.ReadFile(opts.TargetPath)
 		if err == nil {
 			content.Write(data)
@@ -98,7 +100,7 @@ func (e *EnvExporter) buildContent(secrets map[string]string, preview *Preview, 
 		}
 	}
 
-	sortedKeys := sortKeys(secrets)
+	sortedKeys := filter.SortKeys(secrets)
 
 	if len(preview.NewKeys) > 0 && opts.Append {
 		content.WriteString(fmt.Sprintf("\n# Added by veil on %s\n", time.Now().Format("2006-01-02T15:04:05Z")))
@@ -115,7 +117,7 @@ func (e *EnvExporter) buildContent(secrets map[string]string, preview *Preview, 
 
 func (e *EnvExporter) writeNewFile(preview *Preview, opts ExportOptions) error {
 	content := e.buildNewFileContent(preview)
-	return safeWriteFile(opts.TargetPath, []byte(content), 0600, opts.Backup, opts.BackupDir)
+	return fsutil.SafeWriteFile(opts.TargetPath, []byte(content), 0600, opts.Backup, opts.BackupDir)
 }
 
 func (e *EnvExporter) buildNewFileContent(preview *Preview) string {
@@ -192,7 +194,7 @@ func (e *EnvExporter) appendToFile(secrets map[string]string, preview *Preview, 
 		}
 	}
 
-	return safeWriteFile(opts.TargetPath, []byte(content.String()), 0600, opts.Backup, opts.BackupDir)
+	return fsutil.SafeWriteFile(opts.TargetPath, []byte(content.String()), 0600, opts.Backup, opts.BackupDir)
 }
 
 func (e *EnvExporter) parseFileWithStructure(path string) []envLine {

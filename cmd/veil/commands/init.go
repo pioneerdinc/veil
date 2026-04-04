@@ -6,6 +6,7 @@ import (
 
 	"github.com/ossydotpy/veil/internal/config"
 	"github.com/ossydotpy/veil/internal/crypto"
+	"github.com/ossydotpy/veil/internal/fsutil"
 )
 
 // InitCommand generates a new master key for the vault.
@@ -33,7 +34,7 @@ func (c *InitCommand) Execute(args []string, deps Dependencies) error {
 	}
 
 	cfg := config.LoadConfig()
-	if _, err := os.Stat(cfg.DbPath); err == nil {
+	if fsutil.FileExists(cfg.DbPath) {
 		fmt.Fprintf(stderr, "Warning: A database already exists at %s\n", cfg.DbPath)
 		fmt.Fprintf(stderr, "Generating a new key and using it will make all existing secrets UNREADABLE.\n\n")
 	}
