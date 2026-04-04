@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/ossydotpy/veil/internal/encoding/env"
 	"github.com/ossydotpy/veil/internal/envfile"
 	"github.com/ossydotpy/veil/internal/filter"
 	"github.com/ossydotpy/veil/internal/fsutil"
@@ -108,7 +109,7 @@ func (e *EnvExporter) buildContent(secrets map[string]string, preview *Preview, 
 
 	for _, key := range sortedKeys {
 		if slices.Contains(preview.NewKeys, key) {
-			content.WriteString(fmt.Sprintf("%s=%s\n", key, e.escapeValue(secrets[key])))
+			content.WriteString(fmt.Sprintf("%s=%s\n", key, env.EscapeValue(secrets[key])))
 		}
 	}
 
@@ -163,7 +164,7 @@ func (e *EnvExporter) appendToFile(secrets map[string]string, preview *Preview, 
 		for i := range lines {
 			if slices.Contains(preview.UpdatedKeys, lines[i].key) {
 				lines[i].value = secrets[lines[i].key]
-				lines[i].original = fmt.Sprintf("%s=%s", lines[i].key, e.escapeValue(lines[i].value))
+				lines[i].original = fmt.Sprintf("%s=%s", lines[i].key, env.EscapeValue(lines[i].value))
 			}
 		}
 	}
@@ -181,7 +182,7 @@ func (e *EnvExporter) appendToFile(secrets map[string]string, preview *Preview, 
 			lines = append(lines, envLine{
 				key:      key,
 				value:    secrets[key],
-				original: fmt.Sprintf("%s=%s", key, e.escapeValue(secrets[key])),
+				original: fmt.Sprintf("%s=%s", key, env.EscapeValue(secrets[key])),
 			})
 		}
 	}
@@ -223,13 +224,6 @@ func (e *EnvExporter) parseFileWithStructure(path string) []envLine {
 	}
 
 	return lines
-}
-
-func (e *EnvExporter) escapeValue(value string) string {
-	if strings.Contains(value, " ") || strings.Contains(value, "\t") || strings.Contains(value, "#") {
-		return fmt.Sprintf("\"%s\"", strings.ReplaceAll(value, "\"", "\\\""))
-	}
-	return value
 }
 
 func sortKeysFromSlice(keys []string) []string {
