@@ -2,52 +2,14 @@ package commands_test
 
 import (
 	"bytes"
-	"iter"
 	"strings"
 	"testing"
 
 	"github.com/ossydotpy/veil/cmd/veil/commands"
 	"github.com/ossydotpy/veil/internal/app"
 	"github.com/ossydotpy/veil/internal/crypto"
-	"github.com/ossydotpy/veil/internal/store"
+	"github.com/ossydotpy/veil/internal/testhelpers"
 )
-
-// stubStore implements store.Store with minimal behavior needed by tests.
-type stubStore struct {
-	data map[string]string
-}
-
-func (s *stubStore) Save(vault, name, value string) error {
-	if s.data == nil {
-		s.data = make(map[string]string)
-	}
-	s.data[vault+"/"+name] = value
-	return nil
-}
-
-func (s *stubStore) Get(vault, name string) (string, error) {
-	if s.data == nil {
-		return "", store.ErrNotFound
-	}
-	v, ok := s.data[vault+"/"+name]
-	if !ok {
-		return "", store.ErrNotFound
-	}
-	return v, nil
-}
-
-func (s *stubStore) Delete(vault, name string) error { return nil }
-func (s *stubStore) List(vault string) iter.Seq2[string, error] {
-	return func(yield func(string, error) bool) {}
-}
-func (s *stubStore) ListVaults() iter.Seq2[string, error] {
-	return func(yield func(string, error) bool) {}
-}
-func (s *stubStore) Search(pattern string) iter.Seq2[store.SecretRef, error] {
-	return func(yield func(store.SecretRef, error) bool) {}
-}
-func (s *stubStore) Nuke() error  { return nil }
-func (s *stubStore) Close() error { return nil }
 
 func TestVersionCommand_Execute(t *testing.T) {
 	cmd := commands.NewVersionCommand()
@@ -205,7 +167,7 @@ func TestQuickCommand_ExecuteMultiple(t *testing.T) {
 func TestGetCommand_NoTrailingNewline(t *testing.T) {
 	cmd := commands.NewGetCommand()
 
-	st := &stubStore{}
+	st := testhelpers.NewMemStore()
 	engine, err := crypto.NewEngine(strings.Repeat("0", 64))
 	if err != nil {
 		t.Fatalf("failed to create crypto engine: %v", err)
