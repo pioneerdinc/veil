@@ -7,10 +7,6 @@ import (
 
 type EnvImporter struct{}
 
-func NewEnvImporter() *EnvImporter {
-	return &EnvImporter{}
-}
-
 func (e *EnvImporter) Format() string {
 	return "env"
 }

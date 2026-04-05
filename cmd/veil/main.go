@@ -21,7 +21,7 @@ func main() {
 func run() error {
 	if len(os.Args) < 2 {
 		printUsage(os.Stderr)
-		return fmt.Errorf("no command provided")
+		return nil
 	}
 
 	cmdName := os.Args[1]

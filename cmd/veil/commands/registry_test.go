@@ -47,10 +47,10 @@ func TestRegistry_Get(t *testing.T) {
 func TestRegistry_All(t *testing.T) {
 	all := commands.All()
 
-	// Should have all 12 commands registered
+	// Should have all 13 commands registered
 	expectedCommands := []string{
 		"version", "init", "quick", "set", "get", "delete",
-		"list", "vaults", "search", "export", "generate", "reset",
+		"list", "vaults", "search", "export", "generate", "reset", "import",
 	}
 
 	if len(all) != len(expectedCommands) {
