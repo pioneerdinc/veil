@@ -19,6 +19,7 @@
   - [search](#search)
   - [generate](#generate)
   - [export](#export)
+  - [import](#import)
   - [quick](#quick)
   - [reset](#reset)
   - [version](#version)
@@ -489,6 +490,70 @@ DATABASE_URL=postgresql://user:pass@localhost/db
 API_KEY=sk_live_abc123
 JWT_SECRET=deadbeef...
 ```
+
+---
+
+### import
+
+Import secrets from a `.env` file into a vault.
+
+```bash
+veil import <vault> [options]
+```
+
+**Arguments:**
+| Argument | Description |
+|----------|-------------|
+| `vault` | The vault name |
+
+**Options:**
+
+| Option | Description | Default |
+|--------|-------------|---------|
+| `--from <path>` | Source file path | **required** |
+| `--format <fmt>` | Input format: `env` | `env` |
+| `--force` | Overwrite existing keys with different values | `false` |
+| `--dry-run` | Preview without importing | `false` |
+| `--include <pattern>` | Only import matching keys | all |
+| `--exclude <pattern>` | Skip matching keys | none |
+
+**Examples:**
+
+```bash
+# Import all secrets from .env file
+veil import production --from .env.production
+
+# Preview what would be imported
+veil import production --from .env --dry-run
+# Output:
+# DRY RUN - No secrets will be imported
+# Would import to vault from .env:
+#   + DATABASE_URL
+#   + API_KEY
+# Would update in vault:
+#   ~ JWT_SECRET
+# Would skip (already exist with same value):
+#   - API_KEY
+# Summary: 2 new, 1 updates, 1 skipped
+
+# Force overwrite existing keys
+veil import production --from .env --force
+
+# Import only specific keys
+veil import production --from .env --include "DB_*" --include "API_*"
+
+# Exclude sensitive keys
+veil import production --from .env --exclude "*_PASSWORD" --exclude "*_SECRET"
+
+# Combine include and exclude
+veil import production --from .env --include "DB_*" --exclude "*_PASSWORD"
+```
+
+**Notes:**
+- Keys that already exist with the same value are skipped
+- Keys with different values require `--force` to update
+- Supports `*` wildcard in include/exclude patterns
+- Both export and import use the same filtering logic for consistency
 
 ---
 

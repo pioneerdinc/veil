@@ -10,7 +10,10 @@ import (
 
 	"github.com/ossydotpy/veil/internal/crypto"
 	"github.com/ossydotpy/veil/internal/exporter"
+	"github.com/ossydotpy/veil/internal/filter"
+	"github.com/ossydotpy/veil/internal/fsutil"
 	"github.com/ossydotpy/veil/internal/generator"
+	"github.com/ossydotpy/veil/internal/importer"
 	"github.com/ossydotpy/veil/internal/store"
 )
 
@@ -91,9 +94,12 @@ func (a *App) Export(vault string, opts exporter.ExportOptions) (*exporter.Previ
 		return nil, err
 	}
 
-	filtered := exporter.FilterSecrets(secrets, opts.Include, opts.Exclude)
+	filtered := filter.FilterSecrets(secrets, opts.Include, opts.Exclude)
 
-	exp := exporter.Get(opts.Format)
+	exp, err := exporter.Get(opts.Format)
+	if err != nil {
+		return nil, err
+	}
 
 	preview, err := exp.Preview(filtered, opts)
 	if err != nil {
@@ -103,6 +109,61 @@ func (a *App) Export(vault string, opts exporter.ExportOptions) (*exporter.Previ
 	if !opts.DryRun {
 		if err := exp.Export(filtered, opts); err != nil {
 			return nil, err
+		}
+	}
+
+	return preview, nil
+}
+
+func (a *App) Import(vault string, opts importer.ImportOptions) (*importer.Preview, error) {
+	imp, err := importer.Get(opts.Format)
+	if err != nil {
+		return nil, err
+	}
+
+	imported, err := imp.Import(opts)
+	if err != nil {
+		return nil, err
+	}
+
+	existing, err := a.GetAllSecrets(vault)
+	if err != nil {
+		return nil, err
+	}
+
+	preview := &importer.Preview{
+		NewKeys:     make([]string, 0),
+		UpdatedKeys: make([]string, 0),
+		SkippedKeys: make([]string, 0),
+	}
+
+	importedKeys := filter.SortKeys(imported)
+	for _, key := range importedKeys {
+		value := imported[key]
+		if existingValue, exists := existing[key]; exists {
+			if existingValue == value {
+				preview.SkippedKeys = append(preview.SkippedKeys, key)
+			} else if opts.Force {
+				preview.UpdatedKeys = append(preview.UpdatedKeys, key)
+			} else {
+				preview.SkippedKeys = append(preview.SkippedKeys, key)
+			}
+		} else {
+			preview.NewKeys = append(preview.NewKeys, key)
+		}
+	}
+
+	if !opts.DryRun {
+		for _, key := range preview.NewKeys {
+			if err := a.Set(vault, key, imported[key]); err != nil {
+				return nil, err
+			}
+		}
+
+		for _, key := range preview.UpdatedKeys {
+			if err := a.Set(vault, key, imported[key]); err != nil {
+				return nil, err
+			}
 		}
 	}
 
@@ -132,7 +193,7 @@ func (a *App) Generate(vault, name string, opts generator.Options) (string, erro
 
 // appendToEnvFile appends a key-value pair to an .env file
 func (a *App) appendToEnvFile(key, value, path string, force bool) error {
-	if _, err := os.Stat(path); os.IsNotExist(err) {
+	if !fsutil.FileExists(path) {
 		return fmt.Errorf("%s: %w", path, ErrEnvFileNotExist)
 	}
 
