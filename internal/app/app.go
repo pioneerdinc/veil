@@ -95,7 +95,10 @@ func (a *App) Export(vault string, opts exporter.ExportOptions) (*exporter.Previ
 
 	filtered := filter.FilterSecrets(secrets, opts.Include, opts.Exclude)
 
-	exp := exporter.Get(opts.Format)
+	exp, err := exporter.Get(opts.Format)
+	if err != nil {
+		return nil, err
+	}
 
 	preview, err := exp.Preview(filtered, opts)
 	if err != nil {

@@ -1,6 +1,7 @@
 package exporter
 
 import (
+	"errors"
 	"fmt"
 )
 
@@ -8,15 +9,17 @@ var formats = map[string]Exporter{
 	"env": &EnvExporter{},
 }
 
+var ErrUnsupportedFormat = errors.New("unsupported export format")
+
 func Register(name string, e Exporter) {
 	formats[name] = e
 }
 
-func Get(name string) Exporter {
+func Get(name string) (Exporter, error) {
 	if e, ok := formats[name]; ok {
-		return e
+		return e, nil
 	}
-	return formats["env"]
+	return nil, fmt.Errorf("%w: %s", ErrUnsupportedFormat, name)
 }
 
 type Exporter interface {
