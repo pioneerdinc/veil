@@ -16,6 +16,7 @@ A lightweight, secure CLI secrets manager for developers. Store passwords, API k
 - Group secrets by project/environment
 - Global Search - Find secrets across all vaults
 - Export to .env - Generate and export secrets directly to environment files
+- Environment Injection - Run applications with injected secrets without writing to disk
 - Secret Generation - Generate strong passwords, API keys, and JWT secrets
 - Direct .env Integration - Generate secrets straight into your .env files
 ## Installation
@@ -51,6 +52,9 @@ veil generate production DB_PASSWORD --length 32
 
 # 5. Export all secrets to .env
 veil export production --to .env
+
+# 6. Run an application with injected secrets
+veil run production -- npm start
 ```
 
 ## Commands
@@ -97,6 +101,21 @@ veil export production --to .env --force
 
 # Preview without writing
 veil export production --to .env --dry-run
+```
+
+### Run an Application
+
+Run any command with vault secrets dynamically injected straight into its environment variables. The secrets are never written to disk, preventing leaks.
+
+```bash
+# Run a Python script
+veil run production -- python main.py
+
+# Run a Go application
+veil run development -- go run main.go
+
+# Verify what secrets are being injected
+veil run local -- printenv
 ```
 
 ### Generate Secrets

@@ -33,8 +33,7 @@ func (c *ExportCommand) Execute(args []string, deps Dependencies) error {
 		stdout = os.Stdout
 	}
 
-	vault := args[0]
-	opts, err := flags.ParseExportFlags(args[1:])
+	opts, err := flags.ParseExportFlags(args)
 	if err != nil {
 		return err
 	}
@@ -42,6 +41,20 @@ func (c *ExportCommand) Execute(args []string, deps Dependencies) error {
 	if opts.ShowHelp {
 		c.printHelp(stdout)
 		return nil
+	}
+
+	if len(opts.Args) < 1 {
+		return &UsageError{
+			Command: "export",
+			Usage:   "veil export <vault> [<to_path>] [--format <fmt>] [--force] [--append] [--dry-run]",
+		}
+	}
+
+	vault := opts.Args[0]
+
+	// If a second positional argument is provided, use it as TargetPath
+	if len(opts.Args) > 1 {
+		opts.TargetPath = opts.Args[1]
 	}
 
 	preview, err := deps.App.Export(vault, opts.ExportOptions)
@@ -110,7 +123,8 @@ func (c *ExportCommand) printHelp(w io.Writer) {
 	fmt.Fprintln(w)
 	fmt.Fprintln(w, "Flags:")
 	fmt.Fprintln(w, "  --to <path>      Output file path (default: .env)")
-	fmt.Fprintln(w, "  --format <fmt>   Output format: env (default: env)")
+	fmt.Fprintln(w, "                   Tip: can also be passed as second positional argument")
+	fmt.Fprintln(w, "  --format <fmt>   Output format: env, json, yaml (default: env)")
 	fmt.Fprintln(w, "  --force          Overwrite existing file")
 	fmt.Fprintln(w, "  --append         Append to existing file")
 	fmt.Fprintln(w, "  --dry-run        Preview without writing")
@@ -122,7 +136,6 @@ func (c *ExportCommand) printHelp(w io.Writer) {
 	fmt.Fprintln(w, "Examples:")
 	fmt.Fprintln(w, "  veil export production")
 	fmt.Fprintln(w, "  veil export production --to .env.production")
-	fmt.Fprintln(w, "  veil export production --append --to .env")
 	fmt.Fprintln(w, "  veil export production --dry-run")
 	fmt.Fprintln(w, "  veil export production --include 'DB_*' --include 'API_*'")
 }
