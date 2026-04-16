@@ -165,6 +165,7 @@ func printUsage(w *os.File) {
 	fmt.Fprintln(w, "                              --include       Include matching keys (can repeat)")
 	fmt.Fprintln(w, "                              --exclude       Exclude matching keys (can repeat)")
 	fmt.Fprintln(w, "                              --format <fmt>  Input format (env, default: env)")
+	fmt.Fprintln(w, "  run <vault> -- <command>    Run an application with secrets injected into its environment")
 	fmt.Fprintln(w, "  quick [type]                Generate ephemeral secret (no storage)")
 	fmt.Fprintln(w, "                              Types: password|apikey|jwt|hex|base64|uuid|uuidv7")
 	fmt.Fprintln(w, "                              --length N      Password length (default: 32)")

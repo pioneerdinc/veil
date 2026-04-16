@@ -11,6 +11,7 @@ import (
 type ExportOptions struct {
 	exporter.ExportOptions
 	ShowHelp bool
+	Args     []string
 }
 
 // ParseExportFlags parses command-line flags for the export command.
@@ -20,14 +21,15 @@ func ParseExportFlags(args []string) (ExportOptions, error) {
 			TargetPath: ".env",
 			Format:     "env",
 		},
+		Args: make([]string, 0),
 	}
 
 	for i := 0; i < len(args); i++ {
 		arg := args[i]
 
-		// All args should be flags (start with -)
 		if !strings.HasPrefix(arg, "-") {
-			return opts, fmt.Errorf("unexpected argument: %q (unknown flag or misplaced value)", arg)
+			opts.Args = append(opts.Args, arg)
+			continue
 		}
 
 		switch arg {
