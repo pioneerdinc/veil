@@ -191,6 +191,35 @@ func (a *App) Generate(vault, name string, opts generator.Options) (string, erro
 	return secret, nil
 }
 
+func (a *App) RunEnv(vault string, include, exclude []string) (map[string]string, error) {
+	exists, err := a.vaultExists(vault)
+	if err != nil {
+		return nil, fmt.Errorf("failed to check vault: %w", err)
+	}
+	if !exists {
+		return nil, fmt.Errorf("%w: %q", ErrVaultNotFound, vault)
+	}
+
+	secrets, err := a.GetAllSecrets(vault)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load secrets: %w", err)
+	}
+
+	return filter.FilterSecrets(secrets, include, exclude), nil
+}
+
+func (a *App) vaultExists(vault string) (bool, error) {
+	for v, err := range a.store.ListVaults() {
+		if err != nil {
+			return false, fmt.Errorf("listing vaults: %w", err)
+		}
+		if v == vault {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
 // appendToEnvFile appends a key-value pair to an .env file
 func (a *App) appendToEnvFile(key, value, path string, force bool) error {
 	if !fsutil.FileExists(path) {
@@ -234,7 +263,7 @@ func (a *App) appendToEnvFile(key, value, path string, force bool) error {
 			}
 			if existingKey, _, found := strings.Cut(trimmed, "="); found {
 				if existingKey == key {
-					newContent.WriteString(fmt.Sprintf("%s=%s\n", key, value))
+					fmt.Fprintf(&newContent, "%s=%s\n", key, value)
 					continue
 				}
 			}
@@ -246,7 +275,7 @@ func (a *App) appendToEnvFile(key, value, path string, force bool) error {
 		if !strings.HasSuffix(newContent.String(), "\n") {
 			newContent.WriteString("\n")
 		}
-		newContent.WriteString(fmt.Sprintf("%s=%s\n", key, value))
+		fmt.Fprintf(&newContent, "%s=%s\n", key, value)
 	}
 
 	if err := os.WriteFile(path, []byte(newContent.String()), 0600); err != nil {

@@ -104,12 +104,12 @@ func (e *EnvExporter) buildContent(secrets map[string]string, preview *Preview, 
 	sortedKeys := filter.SortKeys(secrets)
 
 	if len(preview.NewKeys) > 0 && opts.Append {
-		content.WriteString(fmt.Sprintf("\n# Added by veil on %s\n", time.Now().Format("2006-01-02T15:04:05Z")))
+		fmt.Fprintf(&content, "\n# Added by veil on %s\n", time.Now().Format("2006-01-02T15:04:05Z"))
 	}
 
 	for _, key := range sortedKeys {
 		if slices.Contains(preview.NewKeys, key) {
-			content.WriteString(fmt.Sprintf("%s=%s\n", key, env.EscapeValue(secrets[key])))
+			fmt.Fprintf(&content, "%s=%s\n", key, env.EscapeValue(secrets[key]))
 		}
 	}
 
@@ -140,7 +140,7 @@ func (e *EnvExporter) buildNewFileContent(preview *Preview) string {
 				}
 			}
 		}
-		content.WriteString(fmt.Sprintf("%s=%s\n", key, value))
+		fmt.Fprintf(&content, "%s=%s\n", key, value)
 	}
 
 	return content.String()

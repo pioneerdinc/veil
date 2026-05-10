@@ -23,7 +23,8 @@ type MemStore struct {
 	SaveCalls []SaveCall // Records every Save() call for verification
 	GetErr    error      // Configurable error for Get()
 	SaveErr   error      // Configurable error for Save()
-	ListErr   error      // Configurable error for List()
+	ListErr    error      // Configurable error for List()
+	ListVaultsErr error   // Configurable error for ListVaults()
 }
 
 // NewMemStore creates a new MemStore with initialized data map.
@@ -79,9 +80,24 @@ func (s *MemStore) List(vault string) iter.Seq2[string, error] {
 	}
 }
 
-// ListVaults returns all vault names (simplified - returns empty for now).
+// ListVaults returns all distinct vault names.
 func (s *MemStore) ListVaults() iter.Seq2[string, error] {
-	return func(yield func(string, error) bool) {}
+	return func(yield func(string, error) bool) {
+		if s.ListVaultsErr != nil {
+			yield("", s.ListVaultsErr)
+			return
+		}
+		seen := make(map[string]bool)
+		for key := range s.data {
+			vaultName, _ := splitKey(key)
+			if !seen[vaultName] {
+				seen[vaultName] = true
+				if !yield(vaultName, nil) {
+					return
+				}
+			}
+		}
+	}
 }
 
 // Search returns secrets matching a pattern (simplified - returns empty for now).
