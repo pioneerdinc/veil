@@ -23,6 +23,7 @@ func TestRegistry_Get(t *testing.T) {
 		{name: "search command exists", cmdName: "search", wantErr: false},
 		{name: "export command exists", cmdName: "export", wantErr: false},
 		{name: "generate command exists", cmdName: "generate", wantErr: false},
+		{name: "run command exists", cmdName: "run", wantErr: false},
 		{name: "reset command exists", cmdName: "reset", wantErr: false},
 		{name: "unknown command", cmdName: "nonexistent", wantErr: true},
 	}
@@ -50,7 +51,7 @@ func TestRegistry_All(t *testing.T) {
 	// Should have all 13 commands registered
 	expectedCommands := []string{
 		"version", "init", "quick", "set", "get", "delete",
-		"list", "vaults", "search", "export", "generate", "reset", "import",
+		"list", "vaults", "search", "export", "generate", "reset", "import", "run",
 	}
 
 	if len(all) != len(expectedCommands) {
